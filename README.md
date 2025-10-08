@@ -2,6 +2,7 @@
 
 - Petit tutoriel GDB: <https://perso.ens-lyon.fr/daniel.hirschkoff/C_Caml/docs/doc_gdb.pdf>
 - Cheat Sheet assembleur x86-64 du [cours CS33](https://cs0330-fall2024.github.io) de Tom Doeppner de l'université Brown : <https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf>
+- Liste des instructions x86-64 de Félix Cloutier: <https://www.felixcloutier.com/x86/>
 
 ## Exemple 1: "Hello, world!" en C
 
