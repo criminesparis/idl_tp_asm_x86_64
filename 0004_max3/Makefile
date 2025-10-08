@@ -1,5 +1,4 @@
-a.out: callmax3.c max3.s
-	#gcc -std=c99 callmax3.c max3.s
-	gcc callmax3.c max3.s
+max3: callmax3.c max3.s
+	gcc -g -o max3 callmax3.c max3.s
 clean:
-	rm -f a.out
+	rm -f max3
