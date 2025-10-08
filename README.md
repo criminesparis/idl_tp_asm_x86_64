@@ -47,6 +47,8 @@ def gcd(a, b):
 print(gcd(int(sys.argv[1]), int(sys.argv[2])))
 ```
 
+Comme pour l'exercice précédent, créer un `Makefile` permettant de construire le programme.
+
 ### Exercice 3: calcul d'un terme arbitraire de la suite de Fibonacci
 
 L'objectif de cet exercice est d'implémenter plusieurs variantes de l'algorithme de calcul d'un terme de la [suite de Fibonacci](https://fr.wikipedia.org/wiki/Suite_de_Fibonacci):
@@ -54,3 +56,5 @@ L'objectif de cet exercice est d'implémenter plusieurs variantes de l'algorithm
 1. Implémenter l'[algorithme de calcul récursif naïf](https://fr.wikipedia.org/wiki/Suite_de_Fibonacci#Algorithme_récursif_naïf)
 2. Implémenter l'[algorithme de calcul en temps polynomial](https://fr.wikipedia.org/wiki/Suite_de_Fibonacci#Algorithme_polynomial)
 3. Implémenter le calcul avec la [formule de Binet](https://fr.wikipedia.org/wiki/Suite_de_Fibonacci#Avec_la_formule_de_Binet)
+
+Comme pour l'exercice précédent, créer un `Makefile` permettant de construire les programmes.
