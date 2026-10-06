@@ -34,6 +34,11 @@ architecture et le fige avec `docker commit`.
 nettoie tous les exercices dans chacune, y compris en compilation croisée.
 C'est ce que l'enseignant lance avant de publier une modification.
 
+Le dépôt est partagé entre la machine et le conteneur: un binaire compilé
+sous macOS y est vu comme à jour par `make` sous Linux, qui tente de
+l'exécuter et échoue (code 127). Faites `make clean` dans l'exercice en
+changeant de système.
+
 Dans l'image émulée, le compilateur croisé tourne lui-même en émulation: il
 lui arrive de planter une fois sur dix avec une erreur interne. Relancer
 suffit; les binaires produits ne sont pas en cause.
