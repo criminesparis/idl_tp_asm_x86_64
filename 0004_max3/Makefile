@@ -1,4 +1,16 @@
-max3: callmax3.c max3.s
-	gcc -g -o max3 callmax3.c max3.s
+include ../common.mk
+
+PROG = max3
+
+all: $(PROG)
+
+$(PROG): callmax3.c $(ARCH)/$(PROG).S
+	$(CCLD) $(CFLAGS) -o $@ $^
+
+run: $(PROG)
+	$(RUN) ./$(PROG)
+
 clean:
-	rm -f max3
+	rm -rf *.o $(PROG) *.dSYM
+
+.PHONY: all run clean

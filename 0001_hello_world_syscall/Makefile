@@ -1,6 +1,19 @@
-hello_world_syscall: hello_world_syscall.o
-	ld -o $@ $<
-hello_world_syscall.o: hello_world_syscall.s
-	gcc -g -no-pie -o $@ -c $<
+include ../common.mk
+
+PROG = hello
+
+all: $(PROG)
+
+$(PROG): $(PROG).o
+	$(LD) -o $@ $<
+
+$(PROG).o: $(ARCH)/$(PROG).S
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+run: $(PROG)
+	$(RUN) ./$(PROG)
+
 clean:
-	rm -f *.o hello_world_syscall
+	rm -rf *.o $(PROG) *.dSYM
+
+.PHONY: all run clean

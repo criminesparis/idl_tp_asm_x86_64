@@ -1,4 +1,16 @@
-hello_world_libc: hello_world_libc.s
-	gcc -no-pie $< -o $@
+include ../common.mk
+
+PROG = hello
+
+all: $(PROG)
+
+$(PROG): $(ARCH)/$(PROG).S
+	$(CCLD) $(CFLAGS) -o $@ $<
+
+run: $(PROG)
+	$(RUN) ./$(PROG)
+
 clean:
-	rm -f hello_world_libc
+	rm -rf *.o $(PROG) *.dSYM
+
+.PHONY: all run clean
