@@ -20,6 +20,10 @@ de chaque exercice détecte votre machine et compile le bon source.
 - **macOS**: installer les outils en ligne de commande de Xcode avec
   `xcode-select --install`. Le débogueur est `lldb`, pas `gdb`.
 
+Éditeur: les extensions VS Code utiles (C/C++, CodeLLDB, coloration de
+l'assembleur x86-64 et Arm, WSL, Dev Containers) sont décrites dans le
+[guide d'installation des TP du chapitre 2](https://github.com/criminesparis/idl/blob/main/tp/002_materiel/INSTALL.md#vs-code).
+
 Pour travailler aussi sur l'*autre* architecture que celle de votre machine:
 
 - **Mac Apple Silicon**: Rosetta exécute les binaires x86-64. Installez-le
