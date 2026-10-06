@@ -14,7 +14,7 @@ assembleur dans `x86_64/jeu.S` ou `aarch64/jeu.S` (`make jeu`).
 | `demo.c`, `x86_64/demo.S`, `aarch64/demo.S` | le même programme minimal en C et dans les deux assembleurs: un bloc déplacé aux flèches |
 | `level1.txt` | le niveau, un caractère par case |
 | `mklevel.py` | engendre `level1.h` (pour le C) et `level1.inc` (pour l'assembleur, des `.ascii`) |
-| `lode.c` | la référence en C du jeu, étapes 1 à 5 |
+| `lode.c` | la référence en C du jeu, étapes 1 à 6 |
 
 `make` compile `demo_c`, `demo_asm` et `lode`; `make run` lance `lode`.
 Sous Windows, voir [WSL2.md](../WSL2.md).
@@ -96,7 +96,7 @@ Vous pouvez dessiner vos propres niveaux: `python3 mklevel.py monniveau.txt`.
 
 ## Les règles, par étapes
 
-`lode.c` implémente les étapes 1 à 5. Chaque étape est une ou deux
+`lode.c` implémente les étapes 1 à 6. Chaque étape est une ou deux
 fonctions de 10 à 30 lignes, testable seule: faites de même en assembleur.
 
 1. **Niveau et déplacement.** Copier le niveau en mémoire, trouver le
@@ -116,11 +116,18 @@ fonctions de 10 à 30 lignes, testable seule: faites de même en assembleur.
    ou à droite, si la case à côté est libre. Le trou se rebouche après 30
    pas: il faut une liste des trous ouverts avec leur compte à rebours. Un
    joueur dans un trou qui se rebouche perd une vie.
-6. **Ennemis.** À chaque pas, chaque ennemi réduit sa distance au joueur:
-   horizontalement si possible, sinon par l'échelle la plus proche. Il tombe
-   dans les trous, y reste quelques pas, en ressort, ou y est enterré et
-   réapparaît en haut. Le toucher coûte une vie.
+6. **Ennemis.** Un pas sur deux, chaque ennemi réduit sa distance au
+   joueur: horizontalement si la case n'est pas solide, sinon par une
+   échelle s'il en a une sous les pieds. Il obéit à la même gravité que le
+   joueur, tombe dans les trous, y reste 15 pas puis en sort par le haut;
+   si le trou se rebouche avant, il est enterré et réapparaît à son point
+   de départ. Le joueur peut marcher sur un ennemi piégé; en toucher un
+   libre coûte une vie. Pas de hasard, pour que deux programmes restent
+   comparables sur un même script.
 7. **Niveaux.** Plusieurs niveaux, le suivant quand on sort par le haut.
+   Non réalisé dans la référence: c'est le prolongement du projet, avec
+   une intelligence d'ennemi plus fine (chercher l'échelle la plus proche
+   quand la route directe est bloquée).
 
 ## Boucle de jeu
 

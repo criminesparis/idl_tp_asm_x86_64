@@ -1,11 +1,18 @@
 /* lode.c: référence en C d'un Lode Runner minimal sur libgfx.
  *
  * Sert de spécification pour la version en assembleur: une fonction par
- * règle, un état en mémoire (le niveau, le joueur, les trous), une boucle à
- * pas fixe. Étapes réalisées: 1 niveau et déplacement, 2 gravité,
- * 3 échelles et barres, 4 or et score, 5 creuser. Restent à faire: 6 les
- * ennemis (ils sont dessinés mais immobiles), 7 la sortie et le niveau
- * suivant (la sortie apparaît, mais il n'y a qu'un niveau).
+ * règle, un état en mémoire (le niveau, le joueur, les trous, les ennemis),
+ * une boucle à pas fixe. Étapes réalisées: 1 niveau et déplacement,
+ * 2 gravité, 3 échelles et barres, 4 or et score, 5 creuser, 6 les ennemis.
+ * Reste à faire: 7 la sortie et le niveau suivant (la sortie apparaît, mais
+ * il n'y a qu'un niveau).
+ *
+ * Les ennemis avancent un pas sur deux, sans hasard: horizontalement vers
+ * le joueur si la case n'est pas solide, sinon verticalement par une
+ * échelle. Ils tombent dans les trous, y restent TRAP_TICKS pas puis en
+ * sortent par le haut; si le trou se rebouche avant, ils sont enterrés et
+ * réapparaissent à leur point de départ. Le joueur peut marcher sur un
+ * ennemi piégé; toucher un ennemi libre coûte une vie.
  *
  * Touches: flèches, z creuser à gauche, x creuser à droite, q quitter.
  *
@@ -21,6 +28,8 @@
 #define HOLE_TICKS  30              /* un trou se rebouche après 30 pas */
 #define MAX_HOLES   16
 #define MAX_ENEMIES 8
+#define ENEMY_EVERY 2               /* les ennemis bougent un pas sur deux */
+#define TRAP_TICKS  15              /* pas passés au fond d'un trou */
 #define ORIGIN_X    0
 #define ORIGIN_Y    1               /* la ligne 0 de l'écran affiche le score */
 
@@ -32,8 +41,9 @@ static int  start_x, start_y;
 static int  score, gold_left, lives = 3;
 static struct { int x, y, timer; } holes[MAX_HOLES];
 static int  nholes;
-static struct { int x, y; } enemies[MAX_ENEMIES];
+static struct { int x, y, sx, sy, trapped; } enemies[MAX_ENEMIES];  /* position, départ, pas restants au fond d'un trou */
 static int  nenemies;
+static long ticks;
 
 /* --- Graphismes: formats lisibles en .byte depuis l'assembleur -------- */
 
@@ -61,12 +71,32 @@ static int solid(char c)  { return c == '#' || c == '@'; }
 static int ladder(char c) { return c == 'H'; }
 static int rope(char c)   { return c == '-'; }
 
-/* Le joueur a un appui: sur une échelle ou une barre, ou au-dessus d'une
- * case solide ou d'une échelle. Sinon il tombe. */
+/* Un personnage en (x, y) a un appui: sur une échelle ou une barre, ou
+ * au-dessus d'une case solide ou d'une échelle. Sinon il tombe. */
+static int standing_at(int x, int y)
+{
+    char here = at(x, y), below = at(x, y + 1);
+    return ladder(here) || rope(here) || solid(below) || ladder(below);
+}
+
+static int hole_at(int x, int y)
+{
+    for (int i = 0; i < nholes; i++)
+        if (holes[i].x == x && holes[i].y == y) return 1;
+    return 0;
+}
+
+/* Un ennemi piégé dans un trou en (x, y)? On peut marcher dessus. */
+static int enemy_trapped_at(int x, int y)
+{
+    for (int i = 0; i < nenemies; i++)
+        if (enemies[i].trapped && enemies[i].x == x && enemies[i].y == y) return 1;
+    return 0;
+}
+
 static int standing(void)
 {
-    char here = at(px, py), below = at(px, py + 1);
-    return ladder(here) || rope(here) || solid(below) || ladder(below);
+    return standing_at(px, py) || enemy_trapped_at(px, py + 1);
 }
 
 static void load_level(void)
@@ -77,7 +107,12 @@ static void load_level(void)
             char c = level_data[y][x];
             if (c == '&') { start_x = x; start_y = y; c = ' '; }
             else if (c == '0') {
-                if (nenemies < MAX_ENEMIES) { enemies[nenemies].x = x; enemies[nenemies].y = y; nenemies++; }
+                if (nenemies < MAX_ENEMIES) {
+                    enemies[nenemies].x = enemies[nenemies].sx = x;
+                    enemies[nenemies].y = enemies[nenemies].sy = y;
+                    enemies[nenemies].trapped = 0;
+                    nenemies++;
+                }
                 c = ' ';
             }
             else if (c == '$') gold_left++;
@@ -134,8 +169,43 @@ static void update_holes(void)
         if (--holes[i].timer > 0) { i++; continue; }
         level[holes[i].y][holes[i].x] = '#';
         if (px == holes[i].x && py == holes[i].y) die();   /* enterré */
+        for (int e = 0; e < nenemies; e++)                   /* ennemi enterré: réapparaît */
+            if (enemies[e].x == holes[i].x && enemies[e].y == holes[i].y) {
+                enemies[e].x = enemies[e].sx; enemies[e].y = enemies[e].sy;
+                enemies[e].trapped = 0;
+            }
         holes[i] = holes[--nholes];                          /* retire l'entrée */
     }
+}
+
+/* Étape 6: les ennemis. */
+static void move_enemies(void)
+{
+    for (int i = 0; i < nenemies; i++) {
+        int ex = enemies[i].x, ey = enemies[i].y;
+        if (enemies[i].trapped) {                   /* au fond d'un trou */
+            if (--enemies[i].trapped == 0) enemies[i].y--;   /* en sort par le haut */
+            continue;
+        }
+        if (!standing_at(ex, ey)) {                 /* gravité */
+            enemies[i].y++;
+            if (hole_at(ex, ey + 1)) enemies[i].trapped = TRAP_TICKS;
+            continue;
+        }
+        int dx = (px > ex) - (px < ex);             /* vers le joueur, horizontalement d'abord */
+        if (dx && !solid(at(ex + dx, ey))) { enemies[i].x += dx; continue; }
+        if (py < ey && ladder(at(ex, ey)) && !solid(at(ex, ey - 1)))
+            enemies[i].y--;
+        else if (py > ey && !solid(at(ex, ey + 1)) && (ladder(at(ex, ey)) || ladder(at(ex, ey + 1))))
+            enemies[i].y++;
+    }
+}
+
+/* Un ennemi libre sur la case du joueur: une vie de moins. */
+static void check_enemies(void)
+{
+    for (int i = 0; i < nenemies; i++)
+        if (!enemies[i].trapped && enemies[i].x == px && enemies[i].y == py) { die(); return; }
 }
 
 /* --- Affichage -------------------------------------------------------- */
@@ -199,6 +269,8 @@ int main(int argc, char **argv)
         if (!standing()) py++;                  /* étape 2: gravité, une case par pas */
         collect();
         update_holes();
+        if (++ticks % ENEMY_EVERY == 0) move_enemies();
+        check_enemies();
         if (lives < 0) end = "Perdu. q pour quitter";
         if (gold_left == 0 && py == 0) end = "Gagne! q pour quitter";
         draw(end);
