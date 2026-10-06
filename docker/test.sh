@@ -6,7 +6,7 @@
 set -u
 cd /w
 echo "### $(uname -m), $(gcc --version | head -1)"
-make -s -C 0001_hello_world_syscall info | head -1
+make -s -C 0001_hello_world_syscall info | sed -n 1p
 fail=0
 for d in 0001_hello_world_syscall 0002_hello_world_libc 0003_argv 0004_max3 0007_jeu 0008_snake 0009_sokoban; do
   make -C $d clean >/dev/null 2>&1
@@ -16,8 +16,8 @@ for d in 0001_hello_world_syscall 0002_hello_world_libc 0003_argv 0004_max3 0007
     0003*)       out=$(./$d/argv un deux | tr '\n' ' ') ;;
     0004*)       out=$(./$d/max3 | head -1) ;;
     0007*)       ./$d/lode RRRRRRRRRRRRzLq >/tmp/lode.txt 2>&1; out="lode: $(tail -c 17 /tmp/lode.txt | tr -d '\n')"; printf q | ./$d/demo_asm >/dev/null && out="$out, demo_asm ok" ;;
-    0008*)       out=$(./$d/snake RRRDDDLLLUU 2>/dev/null | tail -1 | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g') ;;
-    0009*)       out=$(make -s -C $d check) ;;
+    0008*)       out=$(./$d/snake RRRDDDLLLUU 2>/dev/null | tail -1 | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | grep -o 'Score final.*') ;;
+    0009*)       out=$(make -s -C $d check | sed 's/^ *//') ;;
   esac
   echo "$d: $out"
   make -C $d clean >/dev/null 2>&1

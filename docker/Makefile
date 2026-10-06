@@ -6,13 +6,27 @@ ROOT := $(abspath ..)
 
 images: image-amd64 image-arm64
 
+# Avec buildx (Docker Desktop), docker build respecte --platform. Sans
+# (Colima sans le plugin), mkimage.sh fait le même travail par run + commit.
+HAVE_BUILDX := $(shell docker buildx version >/dev/null 2>&1 && echo yes)
+
 image-amd64:
-	docker build --platform linux/amd64 -t idl-asm:amd64 .
+ifeq ($(HAVE_BUILDX),yes)
+	docker buildx build --platform linux/amd64 --load -t idl-asm:amd64 .
+else
+	sh mkimage.sh linux/amd64 idl-asm:amd64
+endif
 
 image-arm64:
-	docker build --platform linux/arm64 -t idl-asm:arm64 .
+ifeq ($(HAVE_BUILDX),yes)
+	docker buildx build --platform linux/arm64 --load -t idl-asm:arm64 .
+else
+	sh mkimage.sh linux/arm64 idl-asm:arm64
+endif
 
-test: test-amd64 test-arm64
+# Les deux tests, même si le premier échoue; le code de retour reflète les deux.
+test:
+	@rc=0; $(MAKE) test-amd64 || rc=1; $(MAKE) test-arm64 || rc=1; exit $$rc
 
 test-amd64: image-amd64
 	docker run --rm --platform linux/amd64 -v "$(ROOT)":/w idl-asm:amd64 sh docker/test.sh aarch64

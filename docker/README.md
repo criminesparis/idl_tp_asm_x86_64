@@ -23,8 +23,17 @@ fois plus lentement; sur un PC, c'est l'image arm64. Docker Desktop active
 cette émulation tout seul; avec Colima, démarrez-le avec
 `colima start --vm-type vz --vz-rosetta` pour une émulation rapide.
 
+La construction de l'image de l'autre architecture demande `buildx`, présent
+dans Docker Desktop. Sans lui (Colima sans le plugin), le Makefile passe par
+`mkimage.sh`, qui installe les paquets dans un conteneur de la bonne
+architecture et le fige avec `docker commit`.
+
 ## Test de fumée
 
 `make -C docker test` construit les deux images, puis compile, exécute et
 nettoie tous les exercices dans chacune, y compris en compilation croisée.
 C'est ce que l'enseignant lance avant de publier une modification.
+
+Dans l'image émulée, le compilateur croisé tourne lui-même en émulation: il
+lui arrive de planter une fois sur dix avec une erreur interne. Relancer
+suffit; les binaires produits ne sont pas en cause.
