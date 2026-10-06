@@ -202,7 +202,10 @@ int main(int argc, char **argv)
         if (lives < 0) end = "Perdu. q pour quitter";
         if (gold_left == 0 && py == 0) end = "Gagne! q pour quitter";
         draw(end);
-        if (end) { while (last_key() != 'q') gfx_sleep(50); break; }
+        if (end) {                              /* attendre q, ou la fin du script */
+            while (last_key() != 'q' && !(script && !*script)) gfx_sleep(50);
+            break;
+        }
         if (script && !*script) { gfx_sleep(300); break; }   /* fin du script */
         next += TICK_MS;                        /* pas fixe, quel que soit le temps de dessin */
         long wait = next - gfx_ticks();

@@ -32,9 +32,9 @@ Pour travailler aussi sur l'*autre* architecture que celle de votre machine:
   `sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu qemu-user`,
   puis `make ARCH=aarch64`. La cible `make run` lance le binaire sous
   `qemu-aarch64`.
-- **Docker** (toutes machines): `docker run --rm -it --platform linux/arm64
-  -v "$PWD":/w -w /w gcc:14` (ou `linux/amd64`) donne un Linux de
-  l'architecture voulue avec gcc et make.
+- **Docker** (toutes machines): `make -C docker shell-arm64` ou
+  `shell-amd64` ouvre un Linux de l'architecture voulue avec gcc, gdb et la
+  chaîne croisée, le dépôt monté dedans. Voir [docker/README.md](docker/README.md).
 
 ## Organisation d'un exercice
 
@@ -156,3 +156,20 @@ séance; les suivantes font l'objet du projet. Attendu dans tous les cas:
 Le mode script de `lode.c` (`./lode RRRRzLq`) permet de comparer votre
 version à la référence sur une même séquence de touches: implémentez-le
 aussi, c'est un bon premier test.
+
+### Exercice 5: Snake
+
+[`0008_snake`](0008_snake): le Snake en assembleur, d'après la référence
+`snake.c`. Exercice d'échauffement d'une séance avant le projet: une file
+circulaire en mémoire pour le corps, une boucle de jeu dont le pas
+raccourcit, et l'ordre des opérations qui permet au serpent de suivre sa
+propre queue. Voir [`0008_snake/README.md`](0008_snake/README.md).
+
+### Exercice 6: Sokoban
+
+[`0009_sokoban`](0009_sokoban): un Sokoban en assembleur, d'après la
+référence `sokoban.c`, avec cinq niveaux fournis et le format standard des
+collections de niveaux. Pas de temps réel: un jeu de règles, une fonction
+de déplacement paramétrée par la direction, et une pile de coups pour
+annuler. Alternative au Lode Runner pour le projet, pour qui préfère la
+logique à l'action. Voir [`0009_sokoban/README.md`](0009_sokoban/README.md).

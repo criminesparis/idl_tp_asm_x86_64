@@ -1,0 +1,39 @@
+; Niveaux de Sokoban, au format habituel: # mur, @ joueur, $ caisse,
+; . cible, * caisse sur cible, + joueur sur cible, espace sol.
+; Un niveau = un bloc de lignes; les niveaux sont séparés par une ligne vide.
+; Les lignes commençant par ; sont des commentaires.
+#######
+#     #
+# $.  #
+#  @  #
+#     #
+#######
+
+########
+# .  . #
+#      #
+# $  $ #
+#  @   #
+########
+
+#########
+#   #   #
+# $ # . #
+#       #
+#   @   #
+#########
+
+########
+#      #
+# $$   #
+# ..   #
+#   @  #
+########
+
+  ####
+###  ####
+#  $    #
+# #  #$ #
+# .   . #
+#   @   #
+#########
