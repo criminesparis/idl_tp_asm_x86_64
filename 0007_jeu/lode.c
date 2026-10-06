@@ -3,9 +3,10 @@
  * Sert de spécification pour la version en assembleur: une fonction par
  * règle, un état en mémoire (le niveau, le joueur, les trous, les ennemis),
  * une boucle à pas fixe. Étapes réalisées: 1 niveau et déplacement,
- * 2 gravité, 3 échelles et barres, 4 or et score, 5 creuser, 6 les ennemis.
- * Reste à faire: 7 la sortie et le niveau suivant (la sortie apparaît, mais
- * il n'y a qu'un niveau).
+ * 2 gravité, 3 échelles et barres, 4 or et score, 5 creuser, 6 les ennemis,
+ * 7 les niveaux: quand tout l'or est ramassé, les échelles de sortie
+ * apparaissent et atteindre la ligne du haut charge le niveau suivant, en
+ * gardant le score et les vies; le dernier niveau franchi gagne la partie.
  *
  * Les ennemis avancent un pas sur deux, sans hasard: horizontalement vers
  * le joueur si la case n'est pas solide, sinon verticalement par une
@@ -20,7 +21,7 @@
  * par pas (L, R, U, D pour les flèches), puis dort. Pratique pour comparer
  * votre version assembleur à celle-ci sur une même séquence. */
 #include "gfx.h"
-#include "level1.h"
+#include "levels.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -38,6 +39,7 @@
 static char level[LEVEL_H][LEVEL_W];        /* copie modifiable du niveau */
 static int  px, py;                         /* position du joueur, en cases */
 static int  start_x, start_y;
+static int  level_no;                       /* numéro du niveau courant */
 static int  score, gold_left, lives = 3;
 static struct { int x, y, timer; } holes[MAX_HOLES];
 static int  nholes;
@@ -99,12 +101,13 @@ static int standing(void)
     return standing_at(px, py) || enemy_trapped_at(px, py + 1);
 }
 
-static void load_level(void)
+static void load_level(int n)
 {
+    level_no = n;
     gold_left = nholes = nenemies = 0;
     for (int y = 0; y < LEVEL_H; y++)
         for (int x = 0; x < LEVEL_W; x++) {
-            char c = level_data[y][x];
+            char c = levels_data[n][y][x];
             if (c == '&') { start_x = x; start_y = y; c = ' '; }
             else if (c == '0') {
                 if (nenemies < MAX_ENEMIES) {
@@ -221,8 +224,8 @@ static void draw(const char *message)
     if (message)
         snprintf(hud, sizeof hud, "%s", message);
     else
-        snprintf(hud, sizeof hud, "Score %d  Or %d  Vies %d   fleches, z/x: creuser, q: quitter",
-                 score, gold_left, lives);
+        snprintf(hud, sizeof hud, "Niveau %d  Score %d  Or %d  Vies %d   fleches, z/x: creuser, q: quitter",
+                 level_no + 1, score, gold_left, lives);
     gfx_text(0, 0, hud, GFX_WHITE);
     gfx_present();
 }
@@ -251,7 +254,7 @@ static int last_key(void)
 int main(int argc, char **argv)
 {
     if (argc > 1) script = argv[1];
-    load_level();
+    load_level(0);
     if (gfx_open(GFX_TILE_W * LEVEL_W, LEVEL_H + ORIGIN_Y) < 0) return 1;
     long next = gfx_ticks();
     const char *end = NULL;
@@ -272,7 +275,10 @@ int main(int argc, char **argv)
         if (++ticks % ENEMY_EVERY == 0) move_enemies();
         check_enemies();
         if (lives < 0) end = "Perdu. q pour quitter";
-        if (gold_left == 0 && py == 0) end = "Gagne! q pour quitter";
+        if (gold_left == 0 && py == 0) {        /* étape 7: niveau suivant, ou victoire */
+            if (level_no + 1 < NLEVELS) load_level(level_no + 1);
+            else end = "Gagne! q pour quitter";
+        }
         draw(end);
         if (end) {                              /* attendre q, ou la fin du script */
             while (last_key() != 'q' && !(script && !*script)) gfx_sleep(50);

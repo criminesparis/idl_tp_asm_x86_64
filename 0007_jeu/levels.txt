@@ -1,0 +1,53 @@
+; Niveaux de Lode Runner, 28 x 16. # brique, @ béton, H échelle, - barre,
+; $ or, S échelle de sortie (cachée tant qu'il reste de l'or), & départ du
+; joueur, 0 ennemi. Une ligne vide sépare les niveaux; ; commente.
+&           $               
+#######H######   H######  ##
+       H         H     $    
+   $   H  ----------  ##H###
+#####H##       $        H   
+     H   ####H####   $  H   
+ $   H       H      ####H###
+######H######H####          
+      H     $H        $     
+  $   H   ####H#####H#######
+#####H#   $   H     H       
+     H ###H####  $  H   $   
+  $  H    H   ######H#######
+#####H####H####   $ H     S 
+$      0  H    0    H   0 S 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+  $  H          &     H  $  
+#####H######  ########H#####
+     H     $          H     
+  ---H------ ##H####  H ----
+     H         H      H     
+ $   H  $      H   $  H  $  
+######H###H###H######H######
+      H   H   H      H      
+   $  H   H $ H  $   H   $  
+H#####H###H###H######H#####H
+H     0   H       0  H     H
+H  #######H########  ##### H
+H  $      H     $          H
+H####H####H#######H######  H
+     H    H   0   H   $   SH
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+&     $        $        $   
+####H######H#######H########
+    H      H       H        
+ $  H  ----H-----  H   $    
+####H####  H  #####H####H###
+    H  0   H       H    H   
+ $  H      H  $ 0  H $  H  $
+############H###########H###
+      0     H           H   
+  $      $  H    $   $  H   
+H#####H#####H######H####H###
+H     H     H      H    H  0
+H  $  H  $  H   $  H    H   
+H#####H#####H######H####H###
+H  0  H   0 H      H  0 H  S
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@

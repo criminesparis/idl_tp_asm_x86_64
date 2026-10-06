@@ -138,7 +138,7 @@ Implémenter en assembleur les trois variantes de [`0006_fib/fib.py`](0006_fib/f
 pour dessiner dans le terminal et lire le clavier, conçue pour être appelée
 depuis l'assembleur, avec des sprites et des cartes de tuiles. Il fournit
 aussi un niveau de **Lode Runner** et une implémentation de référence en C
-des six premières règles du jeu, ennemis compris (`lode.c`). Tout est décrit dans
+du jeu complet, ennemis et niveaux compris (`lode.c`). Tout est décrit dans
 [`0007_jeu/README.md`](0007_jeu/README.md).
 
 Écrire le jeu en assembleur dans `$(ARCH)/jeu.S` (`make jeu`), en suivant

@@ -12,9 +12,9 @@ assembleur dans `x86_64/jeu.S` ou `aarch64/jeu.S` (`make jeu`).
 |---|---|
 | `gfx.h`, `gfx.c`, `gfx_consts.h` | libgfx; `gfx_consts.h` ne contient que des `#define` et s'inclut depuis un `.S` |
 | `demo.c`, `x86_64/demo.S`, `aarch64/demo.S` | le même programme minimal en C et dans les deux assembleurs: un bloc déplacé aux flèches |
-| `level1.txt` | le niveau, un caractère par case |
-| `mklevel.py` | engendre `level1.h` (pour le C) et `level1.inc` (pour l'assembleur, des `.ascii`) |
-| `lode.c` | la référence en C du jeu, étapes 1 à 6 |
+| `levels.txt` | les niveaux, un caractère par case, séparés par une ligne vide |
+| `mklevels.py` | engendre `levels.h` (pour le C) et `levels.inc` (pour l'assembleur, des `.ascii`): le niveau `n` commence à `levels_data + n * LEVEL_W * LEVEL_H` |
+| `lode.c` | la référence en C du jeu, étapes 1 à 7 |
 
 `make` compile `demo_c`, `demo_asm` et `lode`; `make run` lance `lode`.
 Sous Windows, voir [WSL2.md](../WSL2.md).
@@ -59,7 +59,7 @@ joueur: .byte 2, 1,  '(', GFX_GREEN,  ')', GFX_GREEN
 ### Cartes et tuiles
 
 Une carte est un tableau de `w * h` caractères, un par case, ligne par ligne:
-c'est exactement le contenu de `level1.inc`. `gfx_map` dessine chaque case
+c'est exactement le contenu de `levels.inc`. `gfx_map` dessine chaque case
 avec une tuile de `GFX_TILE_W` x `GFX_TILE_H` cellules (2 x 1: deux
 cellules côte à côte, ce qui donne des cases à peu près carrées). La table
 des tuiles associe un caractère de la carte à sa tuile, et se termine par un
@@ -78,7 +78,7 @@ dessiner un sprite sur une case, multiplier l'abscisse par 2.
 
 ## Le niveau
 
-`level1.txt`, 28 cases de large sur 16 de haut:
+`levels.txt`, trois niveaux de 28 cases de large sur 16 de haut:
 
 | Caractère | Case |
 |---|---|
@@ -92,11 +92,12 @@ dessiner un sprite sur une case, multiplier l'abscisse par 2.
 | `&` | position de départ du joueur |
 | `0` | position de départ d'un ennemi |
 
-Vous pouvez dessiner vos propres niveaux: `python3 mklevel.py monniveau.txt`.
+Vous pouvez dessiner vos propres niveaux: ajoutez-les à `levels.txt`, ou
+`python3 mklevels.py mesniveaux.txt`.
 
 ## Les règles, par étapes
 
-`lode.c` implémente les étapes 1 à 6. Chaque étape est une ou deux
+`lode.c` implémente les étapes 1 à 7. Chaque étape est une ou deux
 fonctions de 10 à 30 lignes, testable seule: faites de même en assembleur.
 
 1. **Niveau et déplacement.** Copier le niveau en mémoire, trouver le
@@ -124,10 +125,15 @@ fonctions de 10 à 30 lignes, testable seule: faites de même en assembleur.
    de départ. Le joueur peut marcher sur un ennemi piégé; en toucher un
    libre coûte une vie. Pas de hasard, pour que deux programmes restent
    comparables sur un même script.
-7. **Niveaux.** Plusieurs niveaux, le suivant quand on sort par le haut.
-   Non réalisé dans la référence: c'est le prolongement du projet, avec
-   une intelligence d'ennemi plus fine (chercher l'échelle la plus proche
-   quand la route directe est bloquée).
+7. **Niveaux.** Quand tout l'or est ramassé et que le joueur atteint la
+   ligne du haut, le niveau suivant se charge, score et vies conservés;
+   franchir le dernier gagne la partie. Le niveau courant est un simple
+   indice dans `levels_data`.
+
+Prolongements pour le projet: une intelligence d'ennemi plus fine
+(chercher l'échelle la plus proche quand la route directe est bloquée),
+des niveaux à vous, un bonus quand un ennemi est enterré, des ennemis qui
+ramassent l'or et le lâchent en tombant dans un trou.
 
 ## Boucle de jeu
 

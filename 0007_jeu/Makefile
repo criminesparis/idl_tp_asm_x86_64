@@ -12,15 +12,15 @@ demo_asm: $(ARCH)/demo.S gfx.o
 	$(CCLD) $(CFLAGS) -o $@ $^
 
 # Référence en C du Lode Runner
-lode: lode.c level1.h gfx.o
+lode: lode.c levels.h gfx.o
 	$(CCLD) $(CFLAGS) -o $@ lode.c gfx.o
 
-# Le niveau, converti pour le C et pour l'assembleur
-level1.h level1.inc: level1.txt mklevel.py
-	python3 mklevel.py level1.txt
+# Les niveaux, convertis pour le C et pour l'assembleur
+levels.h levels.inc: levels.txt mklevels.py
+	python3 mklevels.py levels.txt
 
 # Votre jeu: mettez votre source dans $(ARCH)/jeu.S
-jeu: $(ARCH)/jeu.S level1.inc gfx.o
+jeu: $(ARCH)/jeu.S levels.inc gfx.o
 	$(CCLD) $(CFLAGS) -o $@ $(ARCH)/jeu.S gfx.o
 
 run: lode
