@@ -1,10 +1,10 @@
-include ../common.mk
+include ../../common.mk
 
-PROG = fib
+PROG = fib_iter
 
 all: $(PROG)
 
-$(PROG): fib.c $(ARCH)/$(PROG).S
+$(PROG): fib_iter.c $(ARCH)/$(PROG).S
 	$(CCLD) $(CFLAGS) -o $@ $^
 
 run: $(PROG)

@@ -5,8 +5,8 @@
 #endif
 
     .text
-    .globl C(fib)
-C(fib):
+    .globl C(fib_recursif)
+C(fib_recursif):
 fibonacci:
     cmp         $2, %rdi
     jl          n_lower_than_2
