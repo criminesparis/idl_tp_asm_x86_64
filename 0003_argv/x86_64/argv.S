@@ -15,7 +15,10 @@
     .globl C(main)
 C(main):
     push    %rbx                    # sauve les callee-saved utilisés
-    push    %r12                    # (2 push: la pile reste alignée)
+    push    %r12
+    sub     $8, %rsp                # à l'entrée rsp vaut 8 modulo 16; deux push le
+                                    # laissent à 8: ces 8 octets de plus le rendent
+                                    # multiple de 16, ce que l'ABI exige avant call
     mov     %edi, %ebx              # ebx = argc
     mov     %rsi, %r12              # r12 = argv
 1:
@@ -25,6 +28,7 @@ C(main):
     dec     %ebx
     jnz     1b
     xor     %eax, %eax
+    add     $8, %rsp
     pop     %r12
     pop     %rbx
     ret

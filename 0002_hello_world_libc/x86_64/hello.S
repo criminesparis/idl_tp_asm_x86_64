@@ -15,8 +15,9 @@
     .text
     .globl C(main)
 C(main):
-    push    %rbx                    # aligne la pile (8 + 8 = 16) et
-                                    # sauve un registre callee-saved
+    push    %rbx                    # à l'entrée rsp vaut 8 modulo 16 (call a empilé
+                                    # l'adresse de retour): un push le ramène à un
+                                    # multiple de 16, ce que l'ABI exige avant call
     lea     msg(%rip), %rdi
     xor     %eax, %eax
     call    C(printf)

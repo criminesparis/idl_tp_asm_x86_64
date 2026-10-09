@@ -14,9 +14,9 @@
     .text
     .globl C(main)
 C(main):
-    push    %rbx                    # 3 push: la pile reste alignée sur 16
-    push    %r12
-    push    %r13
+    push    %rbx                    # trois push: rsp, qui vaut 8 modulo 16 à l'entrée,
+    push    %r12                    # redevient multiple de 16, ce que l'ABI exige
+    push    %r13                    # avant chaque call
     mov     $30, %r12d              # x
     mov     $10, %r13d              # y
 

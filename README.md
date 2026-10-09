@@ -55,6 +55,27 @@ Pour travailler aussi sur l'*autre* architecture que celle de votre machine:
 - [`common.mk`](common.mk) contient la détection de la machine et le choix
   des outils.
 
+## L'alignement de la pile, le piège classique
+
+Les deux ABI exigent que le pointeur de pile soit un **multiple de 16** au
+moment d'un appel. Sur AArch64 c'est simple: `bl` n'empile rien, et on
+réserve toujours des multiples de 16 (`stp x29, x30, [sp, #-16]!`). Sur
+x86-64, `call` empile 8 octets d'adresse de retour: à l'**entrée** d'une
+fonction, `rsp` vaut donc 8 modulo 16. Chaque `push` retire 8. Avant
+d'appeler une autre fonction, il faut être revenu à un multiple de 16:
+
+| Au début de la fonction | `rsp` modulo 16 | Avant un `call`, il faut |
+|---|---|---|
+| rien | 8 | `sub $8, %rsp` |
+| un `push` | 0 | rien |
+| deux `push` | 8 | `sub $8, %rsp` |
+| trois `push` | 0 | rien |
+
+Et l'inverse avant les `pop` et le `ret`. L'oubli ne se voit pas tout de
+suite: `printf` peut planter dans une instruction SSE qui exige un
+opérande aligné, ou pas, selon ce qu'il a à faire. Les exemples 0002, 0003
+et 0007 montrent les trois cas.
+
 ## Déboguer
 
 | | Linux (gdb) | macOS (lldb) |
