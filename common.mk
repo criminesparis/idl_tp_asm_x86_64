@@ -30,9 +30,11 @@ endif
 ifeq ($(OS),Darwin)
   # macOS: clang sait produire les deux ISA; Rosetta exécute les binaires
   # x86_64 sur Apple Silicon. Le nom Apple de l'ISA AArch64 est arm64.
+  # -isysroot explicite: le clang de Homebrew, s'il passe avant celui
+  # d'Apple dans le PATH, vise sinon un SDK parfois absent du disque.
   CLANG_ARCH := $(if $(filter $(ARCH),aarch64),arm64,x86_64)
   SDK   := $(shell xcrun --show-sdk-path)
-  CC    := clang -arch $(CLANG_ARCH)
+  CC    := clang -arch $(CLANG_ARCH) -isysroot $(SDK)
   LD    := ld -arch $(CLANG_ARCH) -syslibroot $(SDK) -lSystem -e _start
   CCLD  := $(CC)
   RUN   :=
