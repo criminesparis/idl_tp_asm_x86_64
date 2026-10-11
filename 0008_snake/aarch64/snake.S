@@ -1,4 +1,5 @@
 #define W        30
+#define TWO_W    (2 * W)
 #define H        20
 #define W_INIT   W / 2
 #define H_INIT   H / 2
@@ -8,6 +9,13 @@
 #define TICK_MIN 60
 
 #define __FIXED_APPLE__
+
+#include "gfx_consts.h"
+
+.macro ADDR reg, sym
+    adrp    \reg, \sym@PAGE
+    add     \reg, \reg, \sym@PAGEOFF
+.endm
 
 // dst <- l[i]
 .macro LOAD_BYTE dst, l, i, aux
@@ -41,6 +49,7 @@ _main:
     mov     x29, sp
 
     b       main_body
+
     // ┌───────────────────────────┐
     // │        FONCTIONS          │
     // └───────────────────────────┘
@@ -245,6 +254,118 @@ _main:
             mov         x28, #0
             ret
 
+    // FONCTION `TURN`
+    // INPUTS: (x0, x1) <- (ndx, ndy)
+    // OUTPUTS: aucun
+    turn:
+        neg     x2, x21
+        neg     x3, x22
+        cmp     x0, x2
+        ccmp    x1, x3, #0, eq
+        ccmp    x23, #1, #0, eq
+        b.gt    turn_end
+
+        mov     x21, x0
+        mov     x22, x1
+
+        turn_end:
+            ret
+
+    // FONCTION `DRAW`
+    // INPUTS: (x0) <- (*message)
+    // OUTPUTS: aucun
+    draw:
+        // store pointeur message
+        str     x0, [sp, #-16]!
+
+        // char hud[80];
+        sub     sp, sp, #80
+
+        // gfx_clear(GFX_BLACK);
+        mov     x0, #GFX_BLACK
+        CALL    _gfx_clear
+
+        // gfx_rect(0, ORIGIN_Y, 2 * W, H, '.', GFX_BLUE);
+        mov     x0, #0
+        mov     x1, #ORIGIN_Y
+        mov     x2, #TWO_W
+        mov     x3, #H
+        mov     x4, #46     // '.' = 46
+        mov     x5, #GFX_BLUE
+        CALL    _gfx_rect
+
+        // for (int i = tail; i != head; i = (i + 1) % MAX_LEN)
+        sub     sp, sp, #16
+        str     x27, [sp]               // draw-loop i
+        draw_body_loop:
+            ldr     x9, [sp]
+            cmp     x9, x26
+            b.eq    draw_suite
+
+            // gfx_blit(2 * bx[i], ORIGIN_Y + by[i], body_sprite)
+            add     x10, x19, x9
+            ldrb    w0, [x10]
+            lsl     x0, x0, #1
+            add     x10, x20, x9
+            ldrb    w1, [x10]
+            add     x1, x1, #ORIGIN_Y
+            ADDR    x2, body_sprite
+            CALL    _gfx_blit
+
+            ldr     x9, [sp]
+            add     x9, x9, #1
+            cmp     x9, #MAX_LEN
+            csel    x9, xzr, x9, eq
+            str     x9, [sp]
+            b       draw_body_loop
+
+        draw_suite:
+            add     sp, sp, #16
+            // gfx_blit(2 * bx[head], ORIGIN_Y + by[head], head_sprite)
+            add     x10, x19, x26
+            ldrb    w0, [x10]
+            lsl     x0, x0, #1
+            add     x10, x20, x26
+            ldrb    w1, [x10]
+            add     x1, x1, #ORIGIN_Y
+            ADDR    x2, head_sprite
+            CALL    _gfx_blit
+
+            // gfx_blit(2 * ax, ORIGIN_Y + ay, apple_sprite)
+            lsl     x0, x24, #1
+            add     x1, x25, #ORIGIN_Y
+            ADDR    x2, apple_sprite
+            CALL    _gfx_blit
+
+        // if (message) snprintf(hud, sizeof hud, "%s", message);
+        mov     x0, sp
+        mov     x1, #80
+        ldr     x3, [sp, #80]
+        cmp     x3, xzr
+        b.eq    draw_else
+        ADDR    x2, custom_msg
+        CALL    _snprintf
+        b       draw_suite_2
+
+        draw_else:
+        ADDR    x2, default_msg
+        sub     x4, x29, #16
+        ldr     x3, [x4]
+        mov     x4, x23
+        CALL    _snprintf
+
+        draw_suite_2:
+        mov     x0, xzr
+        mov     x1, xzr
+        mov     x2, sp
+        mov     x3, #GFX_WHITE
+        CALL    _gfx_text
+
+        CALL    _gfx_present
+
+        add     sp, sp, #96 // pop hud et msg
+        ret
+
     // ┌───────────────────────────┐
     // │            MAIN           │
     // └───────────────────────────┘
@@ -261,3 +382,16 @@ _main:
         mov     w0, #0
 
         ret
+
+    .section __TEXT,__const
+body_sprite:
+    .byte 2, 1, '[', GFX_GREEN, ']', GFX_GREEN
+head_sprite:
+    .byte 2, 1, '(', GFX_GREEN, ')', GFX_GREEN
+apple_sprite:
+    .byte 2, 1, '@', GFX_RED, ' ', GFX_BLACK
+    .section __TEXT,__cstring
+custom_msg:
+    .asciz  "%s"
+default_msg:
+    .asciz  "Score %d  Longueur %d   fleches, q: quitter"
