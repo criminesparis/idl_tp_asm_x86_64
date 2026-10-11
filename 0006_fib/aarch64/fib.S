@@ -3,6 +3,13 @@ adrp    \reg, \sym@PAGE
 add     \reg, \reg, \sym@PAGEOFF
 .endm
 
+// On définit une convention pour les appels de fonction.
+// Lors d'un appel, on stock la pair (prev_lr, prev_fp)
+// puis viennent les arguments et enfin l'output de la fonction.
+// Lorsque foo finit, on restaure (prev_lr, prev_fp) et on met
+// le résultat de la fonction dans le registre out.
+// Utiliser CALL garde sp inchangé (on discard les cases mémoires
+// auxiliaires utilisées)
 .macro CALL foo, in, out
 stp     xzr, \in, [sp, #-32]!
 stp     x29, x30, [sp, #16]
@@ -38,10 +45,10 @@ _main:
     b.eq    rec
     cmp     x20, #1
     b.eq    iter
-    // cmp     x20, #2
-    // b.eq    binet
+    cmp     x20, #2
+    b.eq    binet
 
-    // fib recursif
+    // fib recursif, x19 contient le résultat
     rec:
         CALL    fn_rec, x19, x19
         b       end
@@ -91,7 +98,25 @@ _main:
             b       end
 
     // fib binet
-    // binet:
+    binet:
+        mov     x0, #5
+        scvtf   d0, x0
+        bl      _sqrt
+        fmov    d2, #1.0
+        fadd    d1, d0, d2
+        fmov    d3, #2.0
+        fdiv    d1, d1, d3
+
+        cmp     x19, 0
+        while_binet:
+            b.eq    end_binet
+            fmul    d2, d2, d1
+            subs     x19, x19, #1
+            b       while_binet
+
+        end_binet:
+            fdiv    d2, d2, d0
+            fcvtas  x19, d2
 
 
     end:
