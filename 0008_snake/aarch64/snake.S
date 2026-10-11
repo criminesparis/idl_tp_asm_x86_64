@@ -7,7 +7,7 @@
 #define TICK0_MS 150
 #define TICK_MIN 60
 
-#define __FIXED_APPLE__ 0
+#define __FIXED_APPLE__
 
 // dst <- l[i]
 .macro LOAD_BYTE dst, l, i, aux
@@ -47,22 +47,24 @@ _main:
 
     // INITIALISATION DES VARIABLES
     init:
-
+        mov     x0, #TICK0_MS
+        stp     xzr, x0, [sp, #-16]!    // [fp-8]: tick_ms, [fp-16]: score
         // J'ai fais le choix d'un array de byte au lien d'un array de int (8 bytes)
         // Première raison: un int est très gros par rapport à des coordonnées sur un écran
         // Seconde raison: sub ne prend que des imm < 4096 (immediate values de 12bits seulement)
-        // Donc ça peut coincer lorsque H*W > 4095 ou que H > 255 ou que W > 255.
+        // Mais ça peut coincer lorsque H*W > 4095 ou que H > 255 ou que W > 255.
         sub     sp, sp, #MAX_LEN
         mov     x19, sp                 // x19: pointeur vers bx
         sub     sp, sp, #MAX_LEN
         mov     x20, sp                 // x20: pointeur vers by
         mov     x21, #1                 // x21: dx
         mov     x22, #0                 // x22: dy
-        mov     x23, #1                 // x22: len
+        mov     x23, #1                 // x23: len
         mov     x24, #3                 // x24: ax
         mov     x25, #3                 // x25: ay
         mov     x26, #0                 // x26: head
         mov     x27, #0                 // x27: tail
+        mov     x28, #1                 // x28: alive
         mov     x0, #W_INIT
         strb    w0, [x19]               // bx[0] = W_INIT
         mov     x0, #H_INIT
@@ -82,8 +84,8 @@ _main:
             cmp         x2, x26
             b.eq        end_on_body
 
-            LOAD_BYTE   w4, x19, x2, x6     // x4: bx[i]
-            LOAD_BYTE   w5, x20, x2, x6     // x5: by[i]
+            LOAD_BYTE   w4, x19, x2, x6     // w4: bx[i]
+            LOAD_BYTE   w5, x20, x2, x6     // w5: by[i]
 
             cmp         x4, x0
             ccmp        x5, x1, #0, eq
@@ -98,8 +100,8 @@ _main:
             ret
 
         end_on_body:
-            LOAD_BYTE   w4, x19, x26, x6    // x4: bx[i]
-            LOAD_BYTE   w5, x20, x26, x6    // x5: by[i]
+            LOAD_BYTE   w4, x19, x26, x6    // w4: bx[head]
+            LOAD_BYTE   w5, x20, x26, x6    // w5: by[head]
 
             cmp         x4, x0
             ccmp        x5, x1, #0, eq
@@ -124,6 +126,7 @@ _main:
 
             while_place_apple:
                 mov     x0, x24
+                mov     x1, x25
                 CALL    on_body
                 cmp     x0, #0
                 b.eq    end_place_apple
@@ -155,6 +158,92 @@ _main:
 
         #endif
 
+    // FONCTION `STEP`
+    // INPUTS: aucun
+    // OUTPUTS: aucun
+    step:
+        LOAD_BYTE   w2, x19, x26, x4     // w2: bx[head]
+        LOAD_BYTE   w3, x20, x26, x4     // w3: by[head]
+        add         x0, x2, x21          // x0: nx
+        add         x1, x3, x22          // x1: ny
+
+        // Vérifier contact avec bordures
+        mov         x6, #1
+        cmp         x0, #0
+        csel        x2, x6, xzr, lt
+        cmp         x0, #W
+        csel        x3, x6, xzr, ge
+        cmp         x1, #0
+        csel        x4, x6, xzr, lt
+        cmp         x1, #H
+        csel        x5, x6, xzr, ge
+        orr         x2, x2, x3
+        orr         x2, x2, x4
+        orr         x2, x2, x5
+        cmp         x2, #1
+        b.eq        step_die
+
+        // int eat = (nx == ax && ny == ay);
+        cmp         x0, x24
+        ccmp        x1, x25, #0, eq
+        csel        x2, x6, xzr, eq   // x2: eat
+
+        // if (!eat) tail = (tail + 1) % MAX_LEN;
+        cmp         x2, #1
+        b.eq        step_else
+        add         x27, x27, #1
+        mov         x3, #MAX_LEN
+        MOD         x27, x27, x3, x4
+        b           step_suite
+
+        step_else:
+        add         x23, x23, #1
+
+        step_suite:
+        // if (on_body(nx, ny)) { alive = 0; return; }
+        mov         x7, x0          // x7 n'est pas changé par on_body
+        CALL        on_body
+        cmp         x0, #1
+        b.eq        step_die
+        mov         x0, x7
+
+        // head = (head + 1) % MAX_LEN;
+        mov         x3, #MAX_LEN
+        add         x26, x26, #1
+        MOD         x26, x26, x3, x4
+
+        // bx[head] = nx; by[head] = ny;
+        add         x3, x19, x26
+        strb        w0, [x3]
+        add         x3, x20, x26
+        strb        w1, [x3]
+
+        cmp         x2, #1
+        b.ne        step_ret
+
+        // score += 10;
+        sub         x4, x29, #16
+        ldr         x3, [x4]
+        add         x3, x3, #10
+        str         x3, [x4]
+
+        // if (tick_ms > TICK_MIN) tick_ms -= 5;
+        sub         x4, x29, #8
+        ldr         x3, [x4]
+        cmp         x3, #TICK_MIN
+        b.le        step_suite_2
+        sub         x3, x3, #5
+        str         x3, [x4]
+
+        step_suite_2:
+            CALL    place_apple
+
+        step_ret:
+            ret
+
+        step_die:
+            mov         x28, #0
+            ret
 
     // ┌───────────────────────────┐
     // │            MAIN           │
