@@ -12,6 +12,7 @@
 
 #include "gfx_consts.h"
 
+// reg <- [sym]
 .macro ADDR reg, sym
     adrp    \reg, \sym@PAGE
     add     \reg, \reg, \sym@PAGEOFF
@@ -84,7 +85,7 @@ _main:
 
     // FONCTION `ON_BODY`
     // INPUTS: (x0, x1) <- (x, y)
-    // OUTPUTS: x0: 1 ou 0
+    // OUTPUTS: (x0) <- 1 ou 0
     on_body:
         mov     x2, x27                 // x2: i
         mov     x3, #MAX_LEN            // x3: MAX_LEN
@@ -366,6 +367,70 @@ _main:
         add     sp, sp, #96 // pop hud et msg
         ret
 
+    // FONCTION `LAST_KEY`
+    // INPUTS: aucun
+    // OUTPUTS: (x0) <- (last_key)
+    last_key:
+        ADDR        x0, script              // x0: ptr to script ptr address
+        ldr         x1, [x0]                // x1: ptr vers caractères
+        cmp         x1, xzr
+        b.ne        last_key_script         // if (script)
+        b           last_key_suite
+
+        last_key_script:
+            ldrb        w2, [x1]            // x2: premier élément de la chaine de caractères
+            cmp         x2, #0
+            b.ne        last_key_switch
+            mov         x0, #GFX_KEY_NONE   // if (!*script)
+            ret
+
+            last_key_switch:
+                add     x1, x1, #1          // on incrémente l'addresse pointée
+                str     x1, [x0]            // mettre à jour script
+
+                cmp     x2, #76                         // 'L': 76
+                b.eq    last_key_L
+                cmp     x2, #82                         // 'R': 82
+                b.eq    last_key_R
+                cmp     x2, #85                         // 'U': 85
+                b.eq    last_key_U
+                cmp     x2, #68                         // 'D': 68
+                b.eq    last_key_D
+
+                mov     x0, x2
+                ret
+
+                last_key_L:
+                    mov     x0, #GFX_KEY_LEFT
+                    ret
+                last_key_R:
+                    mov     x0, #GFX_KEY_RIGHT
+                    ret
+                last_key_U:
+                    mov     x0, #GFX_KEY_UP
+                    ret
+                last_key_D:
+                    mov     x0, #GFX_KEY_DOWN
+                    ret
+
+
+        last_key_suite:
+            mov     x0, #GFX_KEY_NONE
+            mov     x1, #GFX_KEY_NONE
+            str     x1, [sp, #-16]!
+
+            last_key_while:
+                CALL    _gfx_key
+                cmp     x0, #GFX_KEY_NONE
+                b.eq    last_key_end
+                str     x0, [sp]
+                b       last_key_while
+
+        last_key_end:
+            ldr     x0, [sp], #16
+            ret
+
+
     // ┌───────────────────────────┐
     // │            MAIN           │
     // └───────────────────────────┘
@@ -390,8 +455,14 @@ head_sprite:
     .byte 2, 1, '(', GFX_GREEN, ')', GFX_GREEN
 apple_sprite:
     .byte 2, 1, '@', GFX_RED, ' ', GFX_BLACK
+
     .section __TEXT,__cstring
 custom_msg:
     .asciz  "%s"
 default_msg:
     .asciz  "Score %d  Longueur %d   fleches, q: quitter"
+
+    .bss            // variables qui sont 0-initialized
+    .align 8
+script:
+    .zero 8
