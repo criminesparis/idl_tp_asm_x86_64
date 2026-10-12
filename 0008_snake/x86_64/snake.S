@@ -148,14 +148,14 @@ render:
     movq $GFX_BLACK, %rdi
     call gfx_clear
 
-    # Draw pomme
+    # Dessiner pomme
     movq apple_x(%rip), %rdi
     shlq $1, %rdi
     movq apple_y(%rip), %rsi
     leaq sprite_apple(%rip), %rdx
     call gfx_blit
 
-    # Draw snake
+    # Dessiner snake
     movq tail_idx(%rip), %rbx
 
 loop_render:

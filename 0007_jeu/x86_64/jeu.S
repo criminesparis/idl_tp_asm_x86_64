@@ -11,7 +11,7 @@
 sprite_player:
     .byte 2, 1, '(', GFX_GREEN, ')', GFX_GREEN
 
-# Table des tuiles pour gfx_map
+
 tiles:
     .byte ' ', ' ', GFX_BLACK, ' ', GFX_BLACK    # Vide
     .byte '#', '#', GFX_RED,   '#', GFX_RED      # Brique
@@ -38,13 +38,13 @@ C(init_level):
     cmpq    $448, %rcx
     jge     .Linit_done
 
-    movb    C(levels_data)(%rcx), %al # Contenu de levels.inc
+    movb    C(levels_data)(%rcx), %al 
     movb    %al, level_map(%rcx)
 
     cmpb    $'&', %al                 # Départ joueur
     jne     .Linit_next
 
-    # Position X et Y à partir de l'indice
+    # Position X et Y
     movq    %rcx, %rax
     movq    $28, %rbx
     cqto
