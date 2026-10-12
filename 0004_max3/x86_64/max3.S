@@ -11,5 +11,15 @@
     .text
     .globl C(max3)
 C(max3):
-    # TODO
+    # x -> %rdi, y -> %rsi, z -> %rdx
+
+    mov    %rdi, %rax    # %rax = x (max temporaire)
+
+    cmpq    %rsi, %rax    
+    cmovl   %rsi, %rax    # Si %rax < %rsi, %rax = y
+
+    cmpq    %rdx, %rax    
+    cmovl   %rdx, %rax    # Si %rax < %rdx, %rax = z
+
     ret
+
