@@ -1,16 +1,20 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-int64_t fib(int64_t);
+int64_t fib_rec(int64_t);
+int64_t fib_iter(int64_t);
+int64_t fib_binet(int64_t);
 
 int main() {
-    printf("%" PRId64 "\n", fib(0));
-    printf("%" PRId64 "\n", fib(1));
-    printf("%" PRId64 "\n", fib(2));
-    printf("%" PRId64 "\n", fib(5));
-    printf("%" PRId64 "\n", fib(10));
-    printf("%" PRId64 "\n", fib(92));
-    printf("%" PRId64 "\n", fib(93));
-    printf("%" PRId64 "\n", fib(94));
+    // printf("%" PRId64 "\n", fib_iter(0));
+    // printf("%" PRId64 "\n", fib_iter(1));
+    // printf("%" PRId64 "\n", fib_iter(2));
+    // printf("%" PRId64 "\n", fib_iter(5));
+
+    printf("%" PRId64 "\n", fib_rec(0));
+    printf("%" PRId64 "\n", fib_rec(9));
+    printf("%" PRId64 "\n", fib_binet(0));
+    printf("%" PRId64 "\n", fib_binet(1));
+    printf("%" PRId64 "\n", fib_binet(9));
     return 0;
 }
