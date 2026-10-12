@@ -1,3 +1,5 @@
+#include "gfx_consts.h"
+
 #define W        30
 #define TWO_W    (2 * W)
 #define H        20
@@ -7,10 +9,6 @@
 #define MAX_LEN  (W * H)
 #define TICK0_MS 150
 #define TICK_MIN 60
-
-#define __FIXED_APPLE__
-
-#include "gfx_consts.h"
 
 // reg <- [sym]
 .macro ADDR reg, sym
@@ -35,6 +33,26 @@
     str     x30, [sp, #-16]!
     bl      \foo
     ldr     x30, [sp], #16
+.endm
+
+// Apple arm64 passe les arguments variadiques sur la pile.
+.macro CALL_VAR1 foo, arg0
+    sub     sp, sp, #16
+    str     \arg0, [sp]
+    str     x30, [sp, #8]
+    bl      \foo
+    ldr     x30, [sp, #8]
+    add     sp, sp, #16
+.endm
+
+.macro CALL_VAR2 foo, arg0, arg1
+    sub     sp, sp, #32
+    str     \arg0, [sp]
+    str     \arg1, [sp, #8]
+    str     x30, [sp, #16]
+    bl      \foo
+    ldr     x30, [sp, #16]
+    add     sp, sp, #32
 .endm
 
     .text
@@ -79,6 +97,8 @@ _main:
         strb    w0, [x19]               // bx[0] = W_INIT
         mov     x0, #H_INIT
         strb    w0, [x20]               // by[0] = H_INIT
+
+        CALL    place_apple
 
         ret
 
@@ -125,7 +145,7 @@ _main:
     // INPUTS: aucun
     // OUTPUTS: aucun
     place_apple:
-        #ifdef __FIXED_APPLE__
+        #ifdef FIXED_APPLE
 
             mov     x4, #W
             add     x24, x24, #7
@@ -210,11 +230,17 @@ _main:
         add         x23, x23, #1
 
         step_suite:
-        // if (on_body(nx, ny)) { alive = 0; return; }
+        // À longueur 1, la queue a quitté la seule case occupée.
+        // on_body parcourrait sinon toutes les cases libres du buffer circulaire.
         mov         x7, x0          // x7 n'est pas changé par on_body
+        mov         x8, x2          // conserver eat à travers on_body
+        cmp         x23, #1
+        b.eq        step_move_head
         CALL        on_body
         cmp         x0, #1
         b.eq        step_die
+
+        step_move_head:
         mov         x0, x7
 
         // head = (head + 1) % MAX_LEN;
@@ -228,7 +254,7 @@ _main:
         add         x3, x20, x26
         strb        w1, [x3]
 
-        cmp         x2, #1
+        cmp         x8, #1
         b.ne        step_ret
 
         // score += 10;
@@ -259,13 +285,16 @@ _main:
     // INPUTS: (x0, x1) <- (ndx, ndy)
     // OUTPUTS: aucun
     turn:
+        cmp     x23, #1
+        b.le    turn_update
         neg     x2, x21
         neg     x3, x22
         cmp     x0, x2
-        ccmp    x1, x3, #0, eq
-        ccmp    x23, #1, #0, eq
-        b.gt    turn_end
+        b.ne    turn_update
+        cmp     x1, x3
+        b.eq    turn_end
 
+        turn_update:
         mov     x21, x0
         mov     x22, x1
 
@@ -345,7 +374,7 @@ _main:
         cmp     x3, xzr
         b.eq    draw_else
         ADDR    x2, custom_msg
-        CALL    _snprintf
+        CALL_VAR1 _snprintf, x3
         b       draw_suite_2
 
         draw_else:
@@ -353,7 +382,7 @@ _main:
         sub     x4, x29, #16
         ldr     x3, [x4]
         mov     x4, x23
-        CALL    _snprintf
+        CALL_VAR2 _snprintf, x3, x4
 
         draw_suite_2:
         mov     x0, xzr
@@ -421,7 +450,7 @@ _main:
 
             last_key_while:
                 CALL    _gfx_key
-                cmp     x0, #GFX_KEY_NONE
+                cmp     w0, #GFX_KEY_NONE
                 b.eq    last_key_end
                 str     x0, [sp]
                 b       last_key_while
@@ -435,8 +464,20 @@ _main:
     // │            MAIN           │
     // └───────────────────────────┘
     main_body:
-        bl      init
+        cmp     x0, #1
+        b.le    main_suite
+        ADDR    x2, script                  // x2: addresse de script
+        ldr     x4, [x1, #8]                // argv[1]: ptr to caractères
+        str     x4, [x2]
 
+        main_suite:
+        mov     x0, #TWO_W
+        mov     x2, #H
+        add     x1, x2, #ORIGIN_Y
+        CALL    _gfx_open
+        cmp     w0, #0
+        b.ge    main_suite_2
+        mov     x0, #1
         mov     sp, x29
         ldp     x27, x28, [sp, #80]
         ldp     x25, x26, [sp, #64]
@@ -444,9 +485,133 @@ _main:
         ldp     x21, x22, [sp, #32]
         ldp     x19, x20, [sp, #16]
         ldp     x29, x30, [sp], #96
-        mov     w0, #0
-
         ret
+
+        main_suite_2:
+        // init laisse ses variables locales et les tableaux sur la pile;
+        // ne pas utiliser CALL, qui suppose que la fonction restaure sp.
+        bl      init
+
+        CALL    _gfx_ticks
+        str     x0, [sp, #-16]!
+
+        main_for:
+            CALL        last_key
+            cmp         x0, #113            // 'q' = 113
+            b.eq        main_end
+
+            cmp         x0, #GFX_KEY_LEFT
+            b.ne        main_next_if
+            mov         x2, #1
+            neg         x0, x2
+            mov         x1, #0
+            CALL        turn
+            b           main_for_suite
+
+            main_next_if:
+            cmp         x0, #GFX_KEY_RIGHT
+            b.ne        main_next_if_2
+            mov         x0, #1
+            mov         x1, #0
+            CALL        turn
+            b           main_for_suite
+
+            main_next_if_2:
+            cmp         x0, #GFX_KEY_UP
+            b.ne        main_next_if_3
+            mov         x0, #0
+            mov         x2, #1
+            neg         x1, x2
+            CALL        turn
+            b           main_for_suite
+
+            main_next_if_3:
+            cmp         x0, #GFX_KEY_DOWN
+            b.ne        main_for_suite
+            mov         x0, #0
+            mov         x1, #1
+            CALL        turn
+            b           main_for_suite
+
+            main_for_suite:
+            cmp         x28, #1
+            b.ne        main_for_suite_2
+            CALL        step
+
+            main_for_suite_2:
+            mov         x8, #1
+            cmp         x28, #1
+            ADDR        x1, lost_msg
+            csel        x0, xzr, x1 ,eq
+            CALL        draw
+
+            // store `script && !*script`
+            ADDR        x0, script
+            ldr         x1, [x0]
+            mov         x4, #0
+            cbz         x1, main_script_checked
+            ldrb        w3, [x1]
+            cmp         w3, #0
+            cset        x4, eq
+            main_script_checked:
+            str         x4, [sp, #-16]!
+
+            cmp         x28, #1
+            b.eq        main_for_suite_3
+
+            // if (!alive):
+            main_while:
+                CALL        last_key
+                ldr         x1, [sp], #16        // x1: script && !*script, on restaure la stack pour le cas où on break
+                cmp         x0, #113
+                ccmp        x1, #0, #0, ne
+                b.ne        main_end
+
+                sub         sp, sp, #16         // comme on n'a pas break, revenir sur la stack
+                mov         x0, #50
+                CALL        _gfx_sleep
+                b           main_while
+
+            main_for_suite_3:
+                ldr         x1, [sp], #16
+                cmp         x1, #1
+                b.ne        main_for_suite_4
+
+                mov         x0, #300
+                CALL        _gfx_sleep
+                b           main_end
+
+            main_for_suite_4:
+                ldr         x0, [sp]
+                ldr         x1, [x29, #-8]
+                add         x0, x0, x1          // next += tick_ms;
+                str         x0, [sp]
+                CALL        _gfx_ticks
+                ldr         x1, [sp]
+                sub         x0, x1, x0
+                cmp         x0, #0
+                b.le        main_for
+                CALL        _gfx_sleep
+                b           main_for
+
+        main_end:
+            CALL    _gfx_close
+
+            ADDR    x0, end_msg
+            ldr     x1, [x29, #-16]
+            mov     x2, x23
+            CALL_VAR2 _printf, x1, x2
+
+            mov     sp, x29
+            ldp     x27, x28, [sp, #80]
+            ldp     x25, x26, [sp, #64]
+            ldp     x23, x24, [sp, #48]
+            ldp     x21, x22, [sp, #32]
+            ldp     x19, x20, [sp, #16]
+            ldp     x29, x30, [sp], #96
+            mov     w0, #0
+
+            ret
 
     .section __TEXT,__const
 body_sprite:
@@ -461,6 +626,10 @@ custom_msg:
     .asciz  "%s"
 default_msg:
     .asciz  "Score %d  Longueur %d   fleches, q: quitter"
+end_msg:
+    .asciz "Score final: %d, longueur %d\n"
+lost_msg:
+    .asciz "Perdu. q pour quitter"
 
     .bss            // variables qui sont 0-initialized
     .align 8
