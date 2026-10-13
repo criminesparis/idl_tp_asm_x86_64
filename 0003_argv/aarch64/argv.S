@@ -12,7 +12,7 @@
     .text
     .globl C(main)
 C(main):
-    stp     x29, x30, [sp, #-32]!   // fp, lr
+    stp     x29, x30, [sp, #-32]!   // fp (frame pointer), lr (link register)
     stp     x19, x20, [sp, #16]     // callee-saved utilisés
     mov     x29, sp
     mov     w19, w0                 // w19 = argc

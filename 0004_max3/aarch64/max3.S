@@ -12,4 +12,8 @@
     .globl C(max3)
 C(max3):
     // TODO
+    cmp x0, x1 // fills the flag with x0 - x1 (I guess ?)
+    csel x0, x0, x1, GT // x0 <- x0 if flag > 0, x1 else (I guess)
+    cmp x0, x2 // same thing with x0 and x2 ...
+    csel x0, x0, x2, GT
     ret

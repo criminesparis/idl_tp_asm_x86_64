@@ -12,4 +12,12 @@
     .globl C(max3)
 C(max3):
     # TODO
+    mov %rax %rdi
+
+    cmp %rax %rsi
+    cmovg %rax %rsi
+
+    cmp %rax %rdx
+    cmovg %rax %rdx
+
     ret
