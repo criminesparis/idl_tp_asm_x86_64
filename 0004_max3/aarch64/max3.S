@@ -11,5 +11,12 @@
     .text
     .globl C(max3)
 C(max3):
-    // TODO
+    // compare x (x0) and y (x1), select max into x3
+    cmp x0, x1
+    csel x3, x0, x1, gt
+
+    // compare z (x2) and max(x, y) (x3), select final max into x0
+    cmp x2, x3
+    csel x0, x2, x3, gt
+
     ret

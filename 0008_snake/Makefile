@@ -1,28 +1,25 @@
 include ../common.mk
 
-JEU = ../0007_jeu
-CFLAGS += -I$(JEU)
+CFLAGS += -I.
 
-all: snake
+all: snake_c snake_asm
 
-gfx.o: $(JEU)/gfx.c $(JEU)/gfx.h $(JEU)/gfx_consts.h
+gfx.o: gfx.c gfx.h gfx_consts.h
 	$(CC) $(CFLAGS) -O2 -c -o $@ $<
 
-snake: snake.c gfx.o
+snake_c: snake.c gfx.o
 	$(CCLD) $(CFLAGS) -o $@ $^
 
-# Version avec pomme déterministe, pour comparer à votre assembleur
 snake_fixed: snake.c gfx.o
 	$(CCLD) $(CFLAGS) -DFIXED_APPLE -o $@ $^
 
-# Votre version: $(ARCH)/snake.S
-jeu: $(ARCH)/snake.S gfx.o
-	$(CCLD) $(CFLAGS) -o $@ $^
+snake_asm: $(ARCH)/snake.S gfx.o gfx_consts.h
+	$(CCLD) $(CFLAGS) -o $@ $(ARCH)/snake.S gfx.o
 
-run: snake
-	$(RUN) ./snake
+run: snake_asm
+	$(RUN) ./snake_asm
 
 clean:
-	rm -rf *.o snake snake_fixed jeu *.dSYM
+	rm -rf *.o snake_c snake_asm snake_fixed snake jeu *.dSYM
 
 .PHONY: all run clean
