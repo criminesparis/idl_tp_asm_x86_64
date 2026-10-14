@@ -17,7 +17,7 @@
 
 
 C(main):
-    push    %rbx                    # 3 push: la pile reste alignée sur 16
+    push    %rbx
     push    %r12
     push    %r13
     push    %r14
@@ -31,7 +31,7 @@ C(main):
 
     mov     $60, %edi
     mov     $20, %esi
-    call    C(gfx_open)
+    call    C(gfx_open) 
 
 
 
@@ -49,6 +49,7 @@ C(main):
     mov     $'.', %r8d
     mov     $GFX_BLUE, %r9d
     call    C(gfx_rect)
+
 
     mov     %r12d, %edi             # gfx_rect(x, y, 2, 1, '#', GFX_GREEN)
     mov     %r13d, %esi
@@ -123,10 +124,7 @@ C(main):
     cmp     $20, %r13d
     jge      .Llose
 
-
     jmp     .Lloop
-
-
 
 
 
