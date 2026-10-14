@@ -11,5 +11,9 @@
     .text
     .globl C(max3)
 C(max3):
-    # TODO
+    cmp     %rsi, %rdi
+    cmovg   %rdi, %rax
+    cmovl   %rsi, %rax
+    cmp     %rdx, %rax
+    cmovl   %rdx, %rax
     ret
