@@ -11,5 +11,8 @@
     .text
     .globl C(max3)
 C(max3):
-    // TODO
+    cmp x0, x1
+    csel x0, x0, x1, ge
+    cmp x0, x2
+    csel x0, x0, x2, ge
     ret
